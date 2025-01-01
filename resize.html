@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resize and Edit Your Photo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .left-section, .right-section {
+            width: 45%;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-section img {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+            object-fit: contain;
+        }
+
+        .resize-btn, .download-btn, .auto-enhance-btn {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .resize-btn:hover, .download-btn:hover, .auto-enhance-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .input-section label, .input-section select, .input-section input {
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .adjustments-section {
+            margin-top: 20px;
+        }
+
+        .adjustments-section input[type="range"] {
+            width: 100%;
+        }
+
+        .input-section h3 {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="left-section">
+        <h2>Resize and Edit Your Image</h2>
+        
+        <!-- Image Upload -->
+        <div class="input-section">
+            <label for="imageUpload">Upload Image</label>
+            <input type="file" id="imageUpload" accept="image/*">
+        </div>
+
+        <!-- Image Preview -->
+        <img id="imagePreview" src="" alt="Image Preview">
+
+        <!-- Resize Button -->
+        <button id="resizeBtn" class="resize-btn">Resize Image</button>
+
+        <!-- Download Button -->
+        <a id="downloadButton" class="download-btn" href="#" download>Download Image</a>
+
+        <!-- Auto Enhance Button -->
+        <button id="autoEnhanceBtn" class="auto-enhance-btn">Auto Enhance</button>
+    </div>
+
+    <div class="right-section">
+        <!-- Resize Options -->
+        <div class="input-section">
+            <h3>Resize Options</h3>
+            <select id="unitSelect">
+                <option value="px">Pixels (px)</option>
+                <option value="inches">Inches (in)</option>
+                <option value="cm">Centimeters (cm)</option>
+                <option value="mm">Millimeters (mm)</option>
+            </select>
+            <input type="number" id="widthInput" placeholder="Width">
+            <input type="number" id="heightInput" placeholder="Height">
+        </div>
+
+        <!-- Adjustments Section -->
+        <div class="adjustments-section">
+            <h3>Adjust Image</h3>
+
+            <label for="brightness">Brightness</label>
+            <input type="range" id="brightness" min="-100" max="100" value="0">
+
+            <label for="contrast">Contrast</label>
+            <input type="range" id="contrast" min="-100" max="100" value="0">
+
+            <label for="saturation">Saturation</label>
+            <input type="range" id="saturation" min="-100" max="100" value="0">
+            
+            <label for="sharpness">Sharpness</label>
+            <input type="range" id="sharpness" min="0" max="100" value="50">
+
+            <label for="gamma">Gamma</label>
+            <input type="range" id="gamma" min="0" max="2" step="0.1" value="1">
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const resizeBtn = document.getElementById('resizeBtn');
+        const downloadButton = document.getElementById('downloadButton');
+        const widthInput = document.getElementById('widthInput');
+        const heightInput = document.getElementById('heightInput');
+        const unitSelect = document.getElementById('unitSelect');
+        const brightness = document.getElementById('brightness');
+        const contrast = document.getElementById('contrast');
+        const saturation = document.getElementById('saturation');
+        const sharpness = document.getElementById('sharpness');
+        const gamma = document.getElementById('gamma');
+        const autoEnhanceBtn = document.getElementById('autoEnhanceBtn');
+        
+        let uploadedImage;
+        
+        // Handle image upload and preview
+        imageUpload.addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imagePreview.src = e.target.result;
+                    uploadedImage = e.target.result;
+                    // Save the image to localStorage
+                    localStorage.setItem('uploadedImage', uploadedImage);
+                    downloadButton.style.display = 'block'; // Show download button if image is loaded
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Function to apply filters and resize image
+        function resizeImage(width, height) {
+            const img = new Image();
+            img.src = uploadedImage;
+
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = width;
+                canvas.height = height;
+
+                // Apply filter (Brightness, Contrast, Saturation, Sharpness, Gamma)
+                const brightnessValue = (parseInt(brightness.value) + 100) / 100;  // brightness between 0 and 2
+                const contrastValue = (parseInt(contrast.value) + 100) / 100;  // contrast between 0 and 2
+                const saturationValue = (parseInt(saturation.value) + 100) / 100;  // saturation between 0 and 2
+                const sharpnessValue = parseInt(sharpness.value) / 100; // sharpness between 0 and 1
+                const gammaValue = parseFloat(gamma.value); // gamma adjustment
+
+                // Apply filters to canvas
+                ctx.filter = `brightness(${brightnessValue}) contrast(${contrastValue}) saturate(${saturationValue})`;
+                
+                // Apply sharpen (simulate via Canvas imageData)
+                if (sharpnessValue > 0) {
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    // Logic for sharpening can be applied here (e.g., convolution matrix)
+                }
+
+                // Apply gamma correction
+                // Applying gamma effect (brightness adjustments)
+                const gammaImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const pixels = gammaImageData.data;
+                for (let i = 0; i < pixels.length; i += 4) {
+                    pixels[i] = Math.pow(pixels[i] / 255, gammaValue) * 255; // Red
+                    pixels[i + 1] = Math.pow(pixels[i + 1] / 255, gammaValue) * 255; // Green
+                    pixels[i + 2] = Math.pow(pixels[i + 2] / 255, gammaValue) * 255; // Blue
+                }
+                ctx.putImageData(gammaImageData, 0, 0);
+
+                // Draw the image onto the canvas with the applied filters
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const resizedDataURL = canvas.toDataURL('image/png');
+                imagePreview.src = resizedDataURL;
+
+                // Enable download button
+                downloadButton.href = resizedDataURL;
+                downloadButton.style.display = 'block';
+                // Save the resized image to localStorage
+                localStorage.setItem('uploadedImage', resizedDataURL);
+            };
+        }
+
+        // Function to apply auto enhancement
+        autoEnhanceBtn.addEventListener('click', function () {
+            resizeImage(imagePreview.width, imagePreview.height); // Apply auto enhance
+        });
+    });
+</script>
+
+</body>
+</html>

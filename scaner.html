@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Scanner App</title>
+    <style>
+        /* CSS Styling */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            box-sizing: border-box;
+            text-align: center;
+            background: rgb(128 0 0 / 66%);
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            margin: 10px;
+        }
+        .container h1 {
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        .section {
+            background-color: #ffffff;
+            padding: 30px;
+            border: 1.5px solid #b2b2b2;
+            border-radius: 0.5em;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.25);
+            margin-bottom: 20px;
+        }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button {
+            padding: 15px;
+            border: none;
+            outline: none;
+            border-radius: 0.5em;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            transition: 0.3s all;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        video {
+            width: 100%;
+            border: 1.5px solid #b2b2b2;
+            border-radius: 0.5em;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Advanced Scanner App</h1>
+        <div class="section">
+            <h2>QR Code Scanner</h2>
+            <div id="my-qr-reader"></div>
+        </div>
+
+        <div class="section">
+            <h2>Additional Tools</h2>
+            <div class="button-container">
+                <button onclick="convertImageToDoc()">Image to Docs File</button>
+                <button onclick="convertPdfToImage()">PDF to Image File</button>
+                <button onclick="convertImageToText()">Image to Text File</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script>
+        // QR Code Scanner Logic
+        function onScanSuccess(decodedText, decodedResult) {
+            alert("Scanned QR Code: " + decodedText);
+            console.log("Decoded result: ", decodedResult);
+        }
+
+        function onScanFailure(error) {
+            console.warn("QR Code Scan Error: ", error);
+        }
+
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "my-qr-reader",
+            { fps: 10, qrbox: 250 },
+            false
+        );
+
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+function convertImageToDoc() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async () => {
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const imageData = e.target.result;
+                const { createWorker } = Tesseract;
+                const worker = createWorker();
+                await worker.load();
+                await worker.loadLanguage('eng');
+                await worker.initialize('eng');
+                const { data: { text } } = await worker.recognize(imageData);
+                await worker.terminate();
+
+                // Create a DOC File Content
+                const docContent = `
+                    <html>
+                    <head><meta charset="utf-8"></head>
+                    <body>${text.replace(/\n/g, '<br>')}</body>
+                    </html>`;
+                const blob = new Blob([docContent], { type: 'application/msword' });
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = 'extracted-text.doc';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link); // Clean up
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    fileInput.click();
+}
+
+
+
+function convertPdfToImage() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'application/pdf';
+    fileInput.onchange = async () => {
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const pdfData = new Uint8Array(e.target.result);
+                const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                const page = await pdf.getPage(1);
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                await page.render({ canvasContext: context, viewport }).promise;
+
+                // Convert Canvas to PNG Image and Download
+                canvas.toBlob((blob) => {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'converted-image.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link); // Clean up
+                }, 'image/png');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    };
+    fileInput.click();
+}
+
+
+
+
+function convertImageToText() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async () => {
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const imageData = e.target.result;
+                const { createWorker } = Tesseract;
+                const worker = createWorker();
+                await worker.load();
+                await worker.loadLanguage('eng');
+                await worker.initialize('eng');
+                const { data: { text } } = await worker.recognize(imageData);
+                await worker.terminate();
+
+                // Create a TXT File and Download
+                const blob = new Blob([text], { type: 'text/plain' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'extracted-text.txt';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link); // Clean up
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    fileInput.click();
+}
+
+
+
+        
+    </script>
+</body>
+</html>

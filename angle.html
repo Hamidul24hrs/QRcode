@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Image Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+            border: 1px solid #ccc;
+            margin: 20px auto;
+        }
+
+        canvas {
+            cursor: crosshair;
+            background-color: #f9f9f9;
+        }
+
+        button, select, input {
+            margin: 10px;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            color: white;
+        }
+
+        select {
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced Image Editor</h1>
+    <input type="file" id="imageUpload" accept="image/*">
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div>
+        <select id="toolSelector">
+            <option value="brush">Brush</option>
+            <option value="eraser">Eraser</option>
+            <option value="rect">Rectangle</option>
+        </select>
+        <button id="clearButton">Clear</button>
+        <button id="removeObjectsButton">Remove Objects</button>
+        <button id="downloadButton">Download</button>
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const toolSelector = document.getElementById('toolSelector');
+        const clearButton = document.getElementById('clearButton');
+        const removeObjectsButton = document.getElementById('removeObjectsButton');
+        const downloadButton = document.getElementById('downloadButton');
+
+        let tool = 'brush';
+        let isDrawing = false;
+        let startX, startY;
+
+        // Track the original image
+        let originalImage = null;
+
+        toolSelector.addEventListener('change', (e) => {
+            tool = e.target.value;
+        });
+
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            [startX, startY] = [e.offsetX, e.offsetY];
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+
+            const [x, y] = [e.offsetX, e.offsetY];
+            if (tool === 'brush') {
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 10;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                [startX, startY] = [x, y];
+            } else if (tool === 'eraser') {
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 20;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                [startX, startY] = [x, y];
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        clearButton.addEventListener('click', () => {
+            if (originalImage) {
+                ctx.putImageData(originalImage, 0, 0);
+            }
+        });
+
+        removeObjectsButton.addEventListener('click', () => {
+            alert('Object removal is simulated. Implement TensorFlow.js for AI-powered object removal.');
+        });
+
+        downloadButton.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'edited-image.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    </script>
+</body>
+</html>
